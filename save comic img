@@ -1,0 +1,205 @@
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
+
+namespace COMIC
+{
+    public partial class addcomicfrm : Form
+    {
+        public event Action OnComicAdded;
+
+        int move;
+        int movex;
+        int movey;
+        SqlConnection conn = new SqlConnection();
+        SqlCommand cmd = new SqlCommand();
+        private byte[] comicImageData; // لتخزين بيانات الصورة
+
+        public addcomicfrm()
+        {
+            InitializeComponent();
+            conn.ConnectionString = (@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True");
+        }
+
+        public ComboBox Guna2ComboBox1
+        {
+            get { return guna2ComboBox1; }
+        }
+
+        private void guna2Button1_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void guna2Button4_Click(object sender, EventArgs e)
+        {
+            // تمرير الكومبوبوكس إلى الفورم الفرعي
+            catadd cadd = new catadd(guna2ComboBox1);
+            guna2Transition1.ShowSync(cadd);
+        }
+
+        private void addcomicbtn_Click(object sender, EventArgs e)
+        {
+            if (guna2ComboBox1.SelectedItem != null &&
+                !string.IsNullOrWhiteSpace(comictitle.Text) &&
+                !string.IsNullOrWhiteSpace(authername.Text))
+            {
+                string query = "INSERT INTO Comic (ComicType, C_title, Auther, Publishdate, ComicImage, U_ID) " +
+                               "VALUES (@ComicType, @C_title, @Auther, @Publishdate, @ComicImage, @U_ID)";
+
+                try
+                {
+                    using (SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True"))
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        // تمرير القيم إلى الاستعلام
+                        cmd.Parameters.AddWithValue("@ComicType", guna2ComboBox1.Text);
+                        cmd.Parameters.AddWithValue("@C_title", comictitle.Text);
+                        cmd.Parameters.AddWithValue("@Auther", authername.Text);
+                        cmd.Parameters.AddWithValue("@Publishdate", datetxt.Value);
+                        cmd.Parameters.AddWithValue("@U_ID", UserSession.CurrentUserID); // معرف المستخدم الحالي
+
+                        // التحقق من وجود صورة
+                        if (comicImageData != null)
+                        {
+                            cmd.Parameters.AddWithValue("@ComicImage", comicImageData);
+                        }
+                        else
+                        {
+                            cmd.Parameters.AddWithValue("@ComicImage", DBNull.Value);
+                        }
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                        OnComicAdded?.Invoke();
+
+                        MessageBox.Show("تمت إضافة القصة بنجاح!");
+                        this.Close();
+
+
+                     
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء الحفظ: " + ex.Message);
+                }
+            }
+            else
+            {
+                MessageBox.Show("يرجى تعبئة جميع الحقول المطلوبة");
+            }
+
+
+
+            Form  mainForm = (pmainfrm)Application.OpenForms["pmainfrm"];
+
+            MessageBox.Show("تمت إضافة القصة بنجاح!");
+            this.Close();
+        }
+
+
+        private void linkLabel1_Click(object sender, EventArgs e)
+        {
+       
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "Image Files (.jpg; *.jpeg; *.png)|.jpg;.jpeg;.png",
+                Title = "Select Comic Image"
+            };
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    guna2PictureBox1.Image = Image.FromFile(openFileDialog.FileName);
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        guna2PictureBox1.Image.Save(ms, guna2PictureBox1.Image.RawFormat);
+                        comicImageData = ms.ToArray();
+                    }
+                    MessageBox.Show("تم استيراد الصورة بنجاح!");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء تحميل الصورة: " + ex.Message);
+                }
+            }
+        }
+
+        private void addcomicfrm_Load(object sender, EventArgs e)
+        {
+            LoadCategories();
+        }
+
+        private void LoadCategories()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True"))
+                {
+                    conn.Open();
+                    string query = "SELECT DISTINCT ComicType FROM Comic";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            guna2ComboBox1.Items.Clear(); // تفريغ القائمة قبل تحميل البيانات
+                            while (reader.Read())
+                            {
+                                guna2ComboBox1.Items.Add(reader["ComicType"].ToString());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء تحميل قائمة التصنيفات: " + ex.Message);
+            }
+        }
+
+        private void guna2Button3_Click(object sender, EventArgs e)
+        {
+
+            if (WindowState == FormWindowState.Normal)
+            {
+                WindowState = FormWindowState.Maximized;
+            }
+            else
+                WindowState = FormWindowState.Normal;
+        }
+
+        private void guna2Button2_Click(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Minimized;
+
+        }
+
+        private void panel1_MouseDown(object sender, MouseEventArgs e)
+        {
+            move = 1;
+            movex = e.X;
+            movey = e.Y;
+        }
+
+        private void panel1_MouseUp(object sender, MouseEventArgs e)
+        {
+            move = 0;
+        }
+
+        private void panel1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (move == 1)
+            {
+                this.SetDesktopLocation(MousePosition.X - movex, MousePosition.Y - movey);
+            }
+        }
+    }
+}
