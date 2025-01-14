@@ -1,0 +1,189 @@
+ystem;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using System.IO;
+
+namespace COMIC
+{
+    public partial class pmainfrm : Form
+    {
+        SqlConnection conn = new SqlConnection(@"server=DESKTOP-R4AHNUG\SQLSERVER2022;database=comicproject;integrated security=true");
+        int move;
+        int movex;
+        int movey;
+        public pmainfrm()
+        {
+            InitializeComponent();
+        }
+
+        private void guna2Button1_Click(object sender, EventArgs e)
+        {
+            Environment.Exit(1);
+        }
+
+        private void guna2Button2_Click(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Minimized;
+        }
+
+        private void guna2Button3_Click(object sender, EventArgs e)
+        {
+            if (WindowState == FormWindowState.Normal)
+            {
+                WindowState = FormWindowState.Maximized;
+            }
+            else
+                WindowState = FormWindowState.Normal;
+        }
+
+        private void panel1_MouseDown(object sender, MouseEventArgs e)
+        {
+            move = 1;
+            movex = e.X;
+            movey = e.Y;
+        }
+
+        private void panel1_MouseUp(object sender, MouseEventArgs e)
+        {
+            move = 0;
+        }
+
+        private void panel1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (move == 1)
+            {
+                this.SetDesktopLocation(MousePosition.X - movex, MousePosition.Y - movey);
+            }
+        }
+
+        private void panel3_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void addcomicbtn_Click(object sender, EventArgs e)
+        {
+            addcomicfrm addComicForm = new addcomicfrm();
+
+            // الاشتراك في الحدث
+            addComicForm.OnComicAdded += LoadComics;
+
+            guna2Transition1.ShowSync(addComicForm);
+            addComicForm.Show();
+
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void addchptbtn_Click(object sender, EventArgs e)
+        {
+            Form addch = new addchapterfrm();
+            guna2Transition1.ShowSync(addch);
+            addch.Show();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Form showdata = new shdb();
+            guna2Transition1.ShowSync(showdata);
+            showdata.Show();
+        }
+
+        private void guna2TextBox5_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        public void LoadComics()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True"))
+                {
+                    conn.Open();
+                    string query = "SELECT C_title, ComicImage FROM Comic WHERE C_title IS NOT NULL AND ComicImage IS NOT NULL";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            flowLayoutPanel1.Controls.Clear(); // تنظيف القائمة قبل التحديث
+
+                            while (reader.Read())
+                            {
+                                string title = reader["C_title"].ToString();
+                                byte[] imageData = reader["ComicImage"] as byte[];
+
+                                if (string.IsNullOrEmpty(title) || imageData == null)
+                                {
+                                    MessageBox.Show("البيانات غير مكتملة: العنوان أو الصورة مفقودة");
+                                    continue;
+                                }
+
+                                // إنشاء PictureBox للصورة
+                                PictureBox pictureBox = new PictureBox
+                                {
+                                    Width = 100,
+                                    Height = 100,
+                                    SizeMode = PictureBoxSizeMode.StretchImage
+                                };
+
+                                try
+                                {
+                                    pictureBox.Image = Image.FromStream(new MemoryStream(imageData));
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show("حدث خطأ أثناء تحميل الصورة: " + ex.Message);
+                                    continue;
+                                }
+
+                                // إنشاء Label للعنوان
+                                Label titleLabel = new Label
+                                {
+                                    Text = title,
+                                    AutoSize = true,
+                                    ForeColor = Color.White,
+                                    TextAlign = ContentAlignment.MiddleCenter,
+                                    Dock = DockStyle.Bottom
+                                };
+
+                                // إضافة الصورة والعنوان إلى Panel
+                                Panel itemPanel = new Panel
+                                {
+                                    Width = 120,
+                                    Height = 150,
+                                    BackColor = Color.Black,
+                                    Margin = new Padding(10)
+                                };
+                                itemPanel.Controls.Add(pictureBox);
+                                itemPanel.Controls.Add(titleLabel);
+
+                                // إضافة Panel إلى FlowLayoutPanel
+                                flowLayoutPanel1.Controls.Add(itemPanel);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء تحميل القصص: " + ex.Message);
+            }
+        }
+
+        private void pmainfrm_Load(object sender, EventArgs e)
+        {
+            LoadComics();
+        }
+    }
+}
