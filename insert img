@@ -1,0 +1,132 @@
+using System;
+using System.Data.SqlClient;
+using System.Windows.Forms;
+
+namespace COMIC
+{
+    public partial class catadd : Form
+    {
+        int move;
+        int movex;
+        int movey;
+
+        
+        private ComboBox parentComboBox; // مرجع للكومبوبوكس في الفورم الرئيسي
+
+        public catadd(ComboBox comboBox)
+        {
+            InitializeComponent();
+            parentComboBox = comboBox;
+        }
+
+        private void guna2Panel1_MouseUp(object sender, MouseEventArgs e)
+        {
+            move = 0;
+        }
+
+        private void guna2Panel1_MouseDown(object sender, MouseEventArgs e)
+        {
+            move = 1;
+            movex = e.X;
+            movey = e.Y;
+        }
+
+        private void guna2Panel1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (move == 1)
+            {
+                this.SetDesktopLocation(MousePosition.X - movex, MousePosition.Y - movey);
+            }
+        }
+        private void addcatbtn_Click(object sender, EventArgs e)
+        {
+
+
+
+        }
+
+        
+
+        private void UpdateCategoryComboBox()
+        {
+            if (parentComboBox == null)
+                return;
+
+            parentComboBox.Items.Clear();
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True"))
+                {
+                    conn.Open();
+                    string query = "SELECT ComicType FROM Comic";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                parentComboBox.Items.Add(reader["ComicType"].ToString());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("حدث خطأ أثناء تحديث الكومبوبوكس: " + ex.Message);
+            }
+        }
+
+        private void addcatbtn_Click_1(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(cat_txt.Text))
+            {
+                try
+                {
+                    using (SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True"))
+                    {
+                        conn.Open();
+
+                        // التحقق من وجود الصنف مسبقًا
+                        string checkQuery = "SELECT COUNT(*) FROM Comic WHERE ComicType = @ComicType";
+                        using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
+                        {
+                            checkCmd.Parameters.AddWithValue("@ComicType", cat_txt.Text);
+                            int count = (int)checkCmd.ExecuteScalar();
+
+                            if (count > 0)
+                            {
+                                MessageBox.Show("هذا الصنف موجود بالفعل.");
+                                return;
+                            }
+                        }
+
+                        // إضافة الصنف إذا لم يكن موجودًا
+                        string insertQuery = "INSERT INTO Comic (ComicType) VALUES (@ComicType)";
+                        using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
+                        {
+                            insertCmd.Parameters.AddWithValue("@ComicType", cat_txt.Text);
+                            insertCmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    MessageBox.Show("تمت إضافة التصنيف بنجاح.");
+                    UpdateCategoryComboBox();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء إضافة التصنيف: " + ex.Message);
+                }
+            }
+            else
+            {
+                MessageBox.Show("يرجى إدخال اسم التصنيف");
+            }
+        }
+
+        private void guna2Button1_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+        }
+    }
+}
