@@ -1,0 +1,80 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+
+
+namespace COMIC
+{
+    public partial class chooseaccount : Form
+    {
+        private int currentuserid;
+        SqlConnection conn = new SqlConnection();
+        SqlCommand cmd = new SqlCommand();
+        public chooseaccount(int userid )
+        {
+
+            InitializeComponent();
+            conn.ConnectionString = (@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True");
+            currentuserid = userid;
+        }
+
+        private void chooseaccount_Load(object sender, EventArgs e)
+        {
+
+        }
+        private void normalaccbtn_Click(object sender, EventArgs e)
+        {
+            UpdateUserType("Normal", new Normalviewacc());
+        }
+
+        private void premiumaccbtn_Click(object sender, EventArgs e)
+        {
+            UpdateUserType("Premium", new pmainfrm());
+        }
+
+        private void UpdateUserType(string userType, Form nextForm)
+        {
+            try
+            {
+            //using (SqlConnection conn = new SqlConnection(conn.ConnectionString))
+           //   {
+                    conn.Open();
+                    MessageBox.Show("تم فتح الاتصال بقاعدة البيانات");
+
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Users SET Usertype = @Usertype WHERE ID = @ID", conn))
+                    {
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@Usertype", userType);
+                        cmd.Parameters.AddWithValue("@ID", currentuserid);
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        MessageBox.Show("عدد الصفوف المتأثرة: " + rowsAffected);
+
+                        if (rowsAffected > 0)
+                        {
+                            MessageBox.Show("تم حفظ نوع الحساب بنجاح كـ " + userType);
+                            nextForm.Show();
+                            this.Hide();
+                        }
+                        else
+                        {
+                            MessageBox.Show("لم يتم تحديث أي صف. تحقق من صحة بيانات المستخدم.");
+                        }
+                    }
+           //    }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ: " + ex.Message);
+            }
+        }
+
+    }
+}
