@@ -1,0 +1,214 @@
+/*   public partial class premiumaccount : Form
+       {
+
+           SqlConnection conn = new SqlConnection();
+           SqlCommand cmd = new SqlCommand();
+
+           int move;
+           int movex;
+           int movey;
+
+
+
+
+
+
+
+
+           private string selectedusertype;
+           private int currentuserid;
+           public premiumaccount()
+           {
+               InitializeComponent();
+               conn.ConnectionString = (@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True");
+           }
+
+           private void premiumaccount_Load(object sender, EventArgs e)
+           {
+
+           }
+
+           private void premiumaccount_MouseDown(object sender, MouseEventArgs e)
+           {
+
+               move = 1;
+               movex = e.X;
+               movey = e.Y;
+
+           }
+
+           private void premiumaccount_MouseUp(object sender, MouseEventArgs e)
+           {
+               move = 0;
+           }
+
+           private void premiumaccount_MouseMove(object sender, MouseEventArgs e)
+           {
+               if (move == 1)
+               {
+                   this.SetDesktopLocation(MousePosition.X - movex, MousePosition.Y - movey);
+               }
+           }
+           private void guna2Button2_Click(object sender, EventArgs e)
+           {
+               if (string.IsNullOrEmpty(username.Text) || string.IsNullOrEmpty(guna2TextBox3.Text))
+               {
+                   MessageBox.Show("يرجى ادخال اسم المستخدم و كلمة المرور");
+               }
+               try
+               {
+                   conn.Open();
+                   cmd.Connection = conn;
+
+                   cmd.CommandText = "select ID FROM Users where Username =@Username  and Password=@Password";
+                   cmd.Parameters.Clear();
+
+                   cmd.Parameters.AddWithValue("@Username", username.Text.Trim());
+                   cmd.Parameters.AddWithValue("@Password", guna2TextBox3.Text.Trim());
+
+                   object result = cmd.ExecuteScalar();
+
+
+
+                   if (result != null)
+                   {
+                       int useridfromdatabs = Convert.ToInt32(result);
+                       currentuserid = useridfromdatabs;
+
+                       MessageBox.Show("تسجيل الدخول ناجح , معرف المستخدم : " + currentuserid);
+                       chooseaccount chooseacc = new chooseaccount(currentuserid);
+                       chooseacc.Show();
+                       this.Hide();
+                   }
+                   else
+                   {
+                       MessageBox.Show("اسم المستخدم اوالمرور خاطئة ");
+                   }
+               }
+
+               catch (Exception ex)
+               {
+                   MessageBox.Show("حدث خطا : " + ex.Message);
+               }
+               finally
+               {
+                   conn.Close();
+               }
+           }
+
+           private void guna2Button1_Click(object sender, EventArgs e)
+           {
+               Form1 frmacc = new Form1();
+               frmacc.Show();
+               this.Hide();
+           }
+       }*/
+
+    using System;
+    using System.Data.SqlClient;
+    using System.Windows.Forms;
+
+    namespace COMIC
+    {
+        public partial class premiumaccount : Form
+        {
+            SqlConnection conn = new SqlConnection();
+            SqlCommand cmd = new SqlCommand();
+
+            int move;
+            int movex;
+            int movey;
+
+            public premiumaccount()
+            {
+                InitializeComponent();
+                conn.ConnectionString = @"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True";
+            }
+
+            private void premiumaccount_Load(object sender, EventArgs e)
+            {
+                // يمكن إضافة أي إعدادات إضافية عند تحميل الفورم هنا
+            }
+
+            private void premiumaccount_MouseDown(object sender, MouseEventArgs e)
+            {
+                move = 1;
+                movex = e.X;
+                movey = e.Y;
+            }
+
+            private void premiumaccount_MouseUp(object sender, MouseEventArgs e)
+            {
+                move = 0;
+            }
+
+            private void premiumaccount_MouseMove(object sender, MouseEventArgs e)
+            {
+                if (move == 1)
+                {
+                    this.SetDesktopLocation(MousePosition.X - movex, MousePosition.Y - movey);
+                }
+            }
+
+            private void guna2Button2_Click(object sender, EventArgs e)
+            {
+                // تحقق من إدخال اسم المستخدم وكلمة المرور
+                if (string.IsNullOrEmpty(username.Text) || string.IsNullOrEmpty(guna2TextBox3.Text))
+                {
+                    MessageBox.Show("يرجى إدخال اسم المستخدم وكلمة المرور");
+                    return;
+                }
+
+                try
+                {
+                    conn.Open();
+                    cmd.Connection = conn;
+
+                    // استعلام تسجيل الدخول
+                    cmd.CommandText = "SELECT ID FROM Users WHERE Username = @Username AND Password = @Password";
+                    cmd.Parameters.Clear();
+
+                    cmd.Parameters.AddWithValue("@Username", username.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Password", guna2TextBox3.Text.Trim());
+
+                    object result = cmd.ExecuteScalar();
+
+                    if (result != null)
+                    {
+                        // تسجيل الدخول ناجح
+                        int useridfromdatabs = Convert.ToInt32(result);
+
+                        // تخزين معرف المستخدم في UserSession
+                        UserSession.CurrentUserID = useridfromdatabs;
+
+                        MessageBox.Show("تسجيل الدخول ناجح، معرف المستخدم: " + UserSession.CurrentUserID);
+
+                        // الانتقال إلى شاشة اختيار الحساب
+                        chooseaccount chooseacc = new chooseaccount(UserSession.CurrentUserID);
+                        chooseacc.Show();
+                        this.Hide();
+                    }
+                    else
+                    {
+                        MessageBox.Show("اسم المستخدم أو كلمة المرور خاطئة");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ: " + ex.Message);
+                }
+                finally
+                {
+                    conn.Close();
+                }
+            }
+
+            private void guna2Button1_Click(object sender, EventArgs e)
+            {
+                // العودة إلى الشاشة الرئيسية
+                Form1 frmacc = new Form1();
+                frmacc.Show();
+                this.Hide();
+            }
+        }
+    }
