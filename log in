@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+
+namespace COMIC
+{
+    public partial class Form1 : Form
+    {
+        SqlConnection conn = new SqlConnection();
+        SqlCommand cmd = new SqlCommand();
+        int move;
+        int movex;
+        int movey;
+
+        public Form1()
+        {
+            InitializeComponent();
+            conn.ConnectionString = (@"Data Source=DESKTOP-R4AHNUG\SQLSERVER2022;Initial Catalog=comicproject;Integrated Security=True");
+        }
+
+        private void Form1_MouseUp(object sender, MouseEventArgs e)
+        {
+            move = 0;
+        }
+
+        private void Form1_MouseDown(object sender, MouseEventArgs e)
+        {
+            move = 1;
+            movex = e.X;
+            movey = e.Y;
+        }
+
+        private void Form1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (move == 1)
+            {
+                this.SetDesktopLocation(MousePosition.X - movex, MousePosition.Y - movey);
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void guna2Button1_Click(object sender, EventArgs e)
+        {
+            premiumaccount pacc = new premiumaccount();
+            pacc.Show();
+            this.Hide();
+        }
+
+        private void guna2Button2_Click(object sender, EventArgs e)
+        {
+            // التأكد من تعبئة الحقول
+            if (string.IsNullOrEmpty(username.Text) ||
+                string.IsNullOrEmpty(email.Text) ||
+                string.IsNullOrEmpty(password.Text))
+            {
+                MessageBox.Show("يرجى تعبئة جميع الحقول!");
+                return;
+            }
+
+            try
+            {
+                // فتح الاتصال بقاعدة البيانات
+                conn.Open();
+                cmd.Connection = conn;
+
+                // استعلام لإدخال المستخدم الجديد
+                cmd.CommandText = "INSERT INTO Users (Username, Email, Password) OUTPUT INSERTED.ID VALUES (@Username, @Email, @Password)";
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@Username", username.Text.Trim());
+                cmd.Parameters.AddWithValue("@Email", email.Text.Trim());
+                cmd.Parameters.AddWithValue("@Password", password.Text.Trim());
+
+                // استخراج الـ UserID الذي تم إدخاله
+                object result = cmd.ExecuteScalar(); // استخدام ExecuteScalar للحصول على القيمة المُخرجة
+                if (result != null)
+                {
+                    int useridfromdatabs = Convert.ToInt32(result); // تحويل القيمة إلى int
+                    UserSession.CurrentUserID = useridfromdatabs; // حفظ الـ UserID في UserSession
+
+                    MessageBox.Show("تم التسجيل بنجاح! معرف المستخدم: " + useridfromdatabs);
+
+                    // فتح نافذة اختيار نوع الحساب
+                    chooseaccount chacc = new chooseaccount(useridfromdatabs);
+                    chacc.Show();
+                    this.Hide();
+                }
+                else
+                {
+                    MessageBox.Show("حدث خطأ أثناء التسجيل.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ: " + ex.Message);
+            }
+            finally
+            {
+                conn.Close(); // إغلاق الاتصال
+            }
+        }
+    }
+}
